@@ -1,26 +1,30 @@
 import { GameStatus } from '../domain/GameStatus.js';
 
-function cardClasses(card) {
-  if (card.isMatched) {
-    return ['card', 'is-open'];
-  }
-  if (card.isFaceUp) {
-    return ['card', 'shirt-card', 'is-open'];
-  }
-  return ['card', 'shirt-card'];
-}
-
 function createCardElement(card) {
   const element = document.createElement('li');
-  element.className = cardClasses(card).join(' ');
+  element.className = 'card';
   element.dataset.cardKey = card.key;
-  element.dataset.cardsId = card.type;
+
+  const inner = document.createElement('div');
+  inner.className = 'card__inner';
+
+  const shirt = document.createElement('div');
+  shirt.className = 'card__face card__face--shirt';
+
+  const value = document.createElement('div');
+  value.className = 'card__face card__face--value';
+  value.dataset.cardsId = card.type;
+
+  inner.append(shirt, value);
+  element.append(inner);
   return element;
 }
 
 export class BoardView {
   #list;
   #button;
+  #cards = new Map();
+  #renderedDeck = '';
 
   constructor({ root }) {
     this.#list = document.createElement('ul');
@@ -47,14 +51,32 @@ export class BoardView {
   }
 
   show(viewModel) {
-    this.#list.replaceChildren(...viewModel.cards.map(createCardElement));
+    this.#renderCards(viewModel.cards);
     this.#list.style.display = 'flex';
     this.#button.classList.toggle('button-try-active', viewModel.status === GameStatus.WON);
   }
 
   hide() {
     this.#list.replaceChildren();
+    this.#cards.clear();
+    this.#renderedDeck = '';
     this.#list.style.display = 'none';
     this.#button.classList.remove('button-try-active');
+  }
+
+  #renderCards(cards) {
+    const deckSignature = cards.map((card) => card.key).join('|');
+    if (deckSignature !== this.#renderedDeck) {
+      const elements = cards.map(createCardElement);
+      this.#list.replaceChildren(...elements);
+      this.#cards = new Map(cards.map((card, index) => [card.key, elements[index]]));
+      this.#renderedDeck = deckSignature;
+    }
+
+    for (const card of cards) {
+      const element = this.#cards.get(card.key);
+      element.classList.toggle('is-flipped', card.isFaceUp || card.isMatched);
+      element.classList.toggle('is-matched', card.isMatched);
+    }
   }
 }
