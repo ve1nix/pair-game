@@ -22,7 +22,7 @@ export class SetupView {
     button.textContent = 'Начать игру';
 
     this.#form.append(label, this.#input, button);
-    this.#root.append(this.#form);
+    root.append(this.#form);
   }
 
   onStart(handler) {
